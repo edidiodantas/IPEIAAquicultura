@@ -6,9 +6,20 @@ Assistente de gestão aquícola via WhatsApp. O produtor manda um áudio com o m
 
 - [Especificação revisada (v2)](docs/especificacao-v2.md): requisitos funcionais e não funcionais, correções em relação à v1 e decisões em aberto.
 - [Arquitetura e custo estimado](docs/arquitetura.md): fluxo do áudio até o banco, componentes, dimensionamento da GPU e custo mensal.
+- [Guia de desenvolvimento](docs/desenvolvimento.md): como rodar localmente, trocar o motor de inferência e o mapa dos módulos.
+
+## Começo rápido
+
+```bash
+pip install -e ".[dev]"
+ipeia demo        # fazenda de demonstração em SQLite
+ipeia conversar   # simulador de WhatsApp no terminal, sem GPU
+pytest -q
+```
 
 ## Plano
 
 1. Revisar a especificação (concluído).
 2. Desenhar a arquitetura e estimar o custo (concluído, aguardando as decisões em aberto).
-3. Planejar o MVP: fases, critérios de aceite e testes com áudios reais.
+3. Codificar o núcleo do MVP com inferência trocável (em andamento).
+4. Planejar o piloto: critérios de aceite e testes com áudios reais.

@@ -1,0 +1,10 @@
+descricao = "Sanidade e doenças de peixes: sinais clínicos, mortalidade, manchas, parasitas, quarentena"
+versao = "2026.11-exemplo"
+
+[[manuais]]
+arquivo = "manual-exemplo-sanidade.md"
+titulo = "Manual de exemplo: sanidade (NÃO HOMOLOGADO)"
+fonte = "Texto fictício para testes do IPEIA"
+versao = "0.1"
+homologado_em = "não homologado"
+licenca = "uso interno de teste"

@@ -1,0 +1,55 @@
+# Limites zootécnicos usados pela validação por código (RF05).
+#
+# ATENÇÃO: os valores abaixo são PADRÕES PROVISÓRIOS para desenvolvimento.
+# A especificação v2 deixa em aberto quem assina estes limites (um Engenheiro
+# de Pesca parceiro ou somente os manuais). Antes de ir a campo, substitua-os
+# pelos valores homologados e preencha `responsavel` e `versao`.
+#
+# Níveis (RF05):
+#   alerta   -> fora do usual: o produtor pode confirmar, com justificativa.
+#   bloqueio -> fisicamente implausível: o registro é barrado.
+#
+# A ração é comparada com a biomassa do lote (quantidade atual x peso médio),
+# somando o que já foi lançado no mesmo tanque no mesmo dia.
+
+versao = "0.1-provisorio"
+responsavel = "A DEFINIR (Engenheiro de Pesca responsável)"
+
+[geral]
+peso_saco_kg_padrao = 25.0       # usado quando a fazenda não informa
+expiracao_pendencia_horas = 24   # RF02: mesma janela de mensagens livres do WhatsApp
+racao_maxima_sem_lote_kg = 50.0  # tanque sem lote ativo cadastrado: acima disso, bloqueia
+
+[especies.tilapia]
+nome = "Tilápia"
+mortalidade_pct_diaria_alerta = 1.0     # % do lote em um dia
+mortalidade_pct_diaria_bloqueio = 30.0  # acima disso, provável erro de fala ou de cadastro
+
+  [especies.tilapia.fases.alevinagem]
+  racao_pct_biomassa_alerta = 10.0
+  racao_pct_biomassa_bloqueio = 25.0
+
+  [especies.tilapia.fases.juvenil]
+  racao_pct_biomassa_alerta = 5.0
+  racao_pct_biomassa_bloqueio = 15.0
+
+  [especies.tilapia.fases.engorda]
+  racao_pct_biomassa_alerta = 3.0
+  racao_pct_biomassa_bloqueio = 10.0
+
+[especies.tambaqui]
+nome = "Tambaqui"
+mortalidade_pct_diaria_alerta = 1.0
+mortalidade_pct_diaria_bloqueio = 30.0
+
+  [especies.tambaqui.fases.alevinagem]
+  racao_pct_biomassa_alerta = 10.0
+  racao_pct_biomassa_bloqueio = 25.0
+
+  [especies.tambaqui.fases.juvenil]
+  racao_pct_biomassa_alerta = 5.0
+  racao_pct_biomassa_bloqueio = 15.0
+
+  [especies.tambaqui.fases.engorda]
+  racao_pct_biomassa_alerta = 2.5
+  racao_pct_biomassa_bloqueio = 10.0
