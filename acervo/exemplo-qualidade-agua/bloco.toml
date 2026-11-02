@@ -1,0 +1,10 @@
+descricao = "Qualidade da água em viveiros: oxigênio dissolvido, aeração, temperatura, pH, amônia"
+versao = "2026.11-exemplo"
+
+[[manuais]]
+arquivo = "manual-exemplo-agua.md"
+titulo = "Manual de exemplo: qualidade da água (NÃO HOMOLOGADO)"
+fonte = "Texto fictício para testes do IPEIA"
+versao = "0.1"
+homologado_em = "não homologado"
+licenca = "uso interno de teste"

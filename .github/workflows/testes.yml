@@ -1,0 +1,30 @@
+name: testes
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ipeia
+          POSTGRES_PASSWORD: ipeia
+          POSTGRES_DB: ipeia
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-retries 10
+    env:
+      # Papel da aplicação, sem ser dono das tabelas, para o RLS valer (RNF07).
+      IPEIA_TEST_PG_DONO: postgresql+psycopg://ipeia:ipeia@localhost:5432/ipeia
+      IPEIA_TEST_PG_APP: postgresql+psycopg://ipeia_app:app@localhost:5432/ipeia
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev,postgres]"
+      - run: PGPASSWORD=ipeia psql -h localhost -U ipeia -d ipeia -c "CREATE ROLE ipeia_app LOGIN PASSWORD 'app'"
+      - run: pytest -q
