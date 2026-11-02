@@ -65,6 +65,7 @@ Para um provedor que não siga esse formato, crie uma classe com o método
 | `manejo/correcao.py` | Estorno e correção de lançamentos confirmados | RF10 |
 | `confirmacao/` | Botões Confirmar, Corrigir e Cancelar, justificativa e expiração | RF02 |
 | `cag/` | Acervo em blocos, escolha do bloco, barreira de citação e aviso | RF06, RF07, RNF03, RNF05, RNF10 |
+| `cag/ingestao.py`, `cag/temas.py` | Extração de livros em PDF e sugestão de blocos por tema (`ipeia ingerir`, ver `acervo/README.md`) | RF06, RNF05, RNF10 |
 | `banco/` | Modelos SQLAlchemy e sessão com RLS | RNF07, RNF09 |
 | `orquestrador.py` | Recebe a mensagem e chama o fluxo certo | |
 | `api/app.py` | FastAPI: webhook e `/saude` | |

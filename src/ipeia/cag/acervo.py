@@ -6,6 +6,11 @@ Estrutura em disco:
       <bloco>/
         bloco.toml      # descrição, versão e lista de manuais
         <manual>.md     # texto do manual, com marcadores <!-- pagina: N -->
+      _livros/
+        <livro>/        # livros em PDF ingeridos com `ipeia ingerir` (ver ingestao.py)
+
+Um manual do bloco pode ser um arquivo .md (`arquivo = ...`) ou um trecho de um
+livro ingerido (`livro = ...` e `paginas = "31-58, 70"`).
 
 Só o bloco escolhido pelo roteador entra no prompt. Como o prompt de sistema do
 bloco é sempre o mesmo texto, o vLLM reaproveita o KV-Cache dele (RNF05).
@@ -17,7 +22,10 @@ import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 
-_RE_PAGINA = re.compile(r"<!--\s*pagina:\s*(\S+)\s*-->", re.IGNORECASE)
+from .ingestao import LICENCA_PENDENTE, interpretar_intervalos
+
+_RE_PAGINA = re.compile(r"<!--\s*pagina:\s*(\S+?)(?:\s+pdf:\s*(\d+))?\s*-->", re.IGNORECASE)
+PASTA_LIVROS = "_livros"
 TAMANHO_MINIMO_CITACAO = 20
 
 
@@ -34,6 +42,7 @@ class Pagina:
     numero: str
     texto: str
     normalizado: str
+    indice_pdf: int | None = None
 
 
 @dataclass(frozen=True)
@@ -44,6 +53,7 @@ class Manual:
     homologado_em: str
     licenca: str
     paginas: tuple[Pagina, ...]
+    livro: str | None = None
 
     @property
     def texto(self) -> str:
@@ -95,16 +105,43 @@ def _ler_paginas(texto: str) -> tuple[Pagina, ...]:
     paginas: list[Pagina] = []
     if partes[0].strip():
         paginas.append(Pagina("?", partes[0].strip(), normalizar_para_busca(partes[0])))
-    for numero, conteudo in zip(partes[1::2], partes[2::2]):
-        paginas.append(Pagina(numero, conteudo.strip(), normalizar_para_busca(conteudo)))
+    for numero, pdf, conteudo in zip(partes[1::3], partes[2::3], partes[3::3]):
+        paginas.append(Pagina(numero, conteudo.strip(), normalizar_para_busca(conteudo),
+                              int(pdf) if pdf else None))
     return tuple(paginas)
 
 
-def carregar_bloco(pasta: Path) -> Bloco:
+def _manual_de_livro(m: dict, pasta_livros: Path, bloco: str) -> Manual:
+    pasta = pasta_livros / m["livro"]
+    if not (pasta / "livro.md").exists():
+        raise FileNotFoundError(
+            f"Bloco {bloco}: livro {m['livro']!r} não encontrado em {pasta}. Rode `ipeia ingerir` "
+            "com o PDF ou confira IPEIA_ACERVO_DIR.")
+    with open(pasta / "livro.toml", "rb") as f:
+        meta = tomllib.load(f)
+    todas = _ler_paginas((pasta / "livro.md").read_text(encoding="utf-8"))
+    por_indice = {p.indice_pdf: p for p in todas if p.indice_pdf is not None}
+    escolhidas = interpretar_intervalos(m["paginas"], len(por_indice))
+    paginas = tuple(por_indice[i] for i in escolhidas if por_indice[i].texto)
+    return Manual(
+        titulo=m.get("titulo") or meta.get("titulo", m["livro"]),
+        fonte=m.get("fonte") or meta.get("fonte", ""),
+        versao=str(m.get("versao") or meta.get("sha256", "")[:12]),
+        homologado_em=str(m.get("homologado_em", "")),
+        licenca=m.get("licenca") or meta.get("licenca", ""),
+        paginas=paginas, livro=m["livro"],
+    )
+
+
+def carregar_bloco(pasta: Path, pasta_livros: Path | None = None) -> Bloco:
+    pasta_livros = pasta_livros or pasta.parent / PASTA_LIVROS
     with open(pasta / "bloco.toml", "rb") as f:
         meta = tomllib.load(f)
     manuais = []
     for m in meta.get("manuais", []):
+        if "livro" in m:
+            manuais.append(_manual_de_livro(m, pasta_livros, pasta.name))
+            continue
         texto = (pasta / m["arquivo"]).read_text(encoding="utf-8")
         manuais.append(Manual(titulo=m["titulo"], fonte=m.get("fonte", ""), versao=str(m["versao"]),
                               homologado_em=str(m.get("homologado_em", "")),
@@ -122,6 +159,17 @@ class Acervo:
         limite = janela_tokens // 2
         return [f"{b.nome}: ~{b.tokens_estimados()} tokens (limite {limite})"
                 for b in self.blocos.values() if b.tokens_estimados() > limite]
+
+    def pendencias(self) -> list[str]:
+        """Manuais sem licença conferida ou sem data de homologação (RNF10)."""
+        avisos = []
+        for b in self.blocos.values():
+            for m in b.manuais:
+                if not m.licenca.strip() or LICENCA_PENDENTE in m.licenca.lower():
+                    avisos.append(f"{b.nome} / {m.titulo}: licença não conferida")
+                if not m.homologado_em.strip():
+                    avisos.append(f"{b.nome} / {m.titulo}: sem data de homologação")
+        return avisos
 
 
 def carregar_acervo(raiz: Path) -> Acervo:

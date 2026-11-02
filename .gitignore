@@ -5,3 +5,8 @@ __pycache__/
 *.db
 *.egg-info/
 .pytest_cache/
+
+# Livros do acervo: o texto é protegido por direito autoral. Guarde o acervo real
+# fora do repositório (IPEIA_ACERVO_DIR) ou num repositório privado.
+acervo/_livros/
+*.pdf
