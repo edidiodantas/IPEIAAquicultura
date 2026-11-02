@@ -5,16 +5,19 @@ Comandos:
   demo               cria a fazenda de demonstração (telefone 5584999990000)
   conversar          simulador de WhatsApp no terminal, com os adaptadores configurados
   expirar            expira pendências com mais de 24 h (rodar por cron)
-  verificar          confere limites.toml e o tamanho dos blocos do acervo (RNF05)
+  verificar          confere limites.toml, o tamanho dos blocos (RNF05) e as licenças (RNF10)
+  ingerir PDF...     extrai livros em PDF para o acervo e sugere os blocos temáticos
 """
 
 import argparse
 import itertools
 import sys
+from pathlib import Path
 
 from .banco.sessao import criar_engine, criar_tabelas, fabrica_de_sessoes, transacao
 from .cadastro import TELEFONE_DEMO, criar_fazenda_demo
-from .cag.acervo import carregar_acervo
+from .cag.acervo import PASTA_LIVROS, carregar_acervo
+from .cag.ingestao import agrupar_por_tema, esboco_bloco_toml, extrair_pdf, gravar_livro
 from .config import obter_configuracao
 from .confirmacao.servico import expirar_pendencias
 from .manejo.limites import carregar_limites
@@ -59,6 +62,39 @@ def _conversar(telefone: str) -> None:
         print()
 
 
+def _ingerir(pdfs: list[Path], slug: str | None, destino: Path, janela_tokens: int) -> None:
+    if slug and len(pdfs) > 1:
+        sys.exit("--slug só vale com um PDF por vez.")
+    faltando = [str(p) for p in pdfs if not p.is_file()]
+    if faltando:
+        sys.exit(f"Arquivo não encontrado: {', '.join(faltando)}")
+    livros = []
+    for pdf in pdfs:
+        livro = extrair_pdf(pdf, slug)
+        pasta = gravar_livro(livro, destino)
+        livros.append(livro)
+        print(f"\n📘 {livro.titulo} -> {pasta}")
+        print(f"   {len(livro.paginas)} páginas, ~{livro.tokens_estimados} tokens, "
+              f"{len(livro.capitulos)} capítulo(s)")
+        sem_texto = livro.paginas_sem_texto
+        if len(sem_texto) > len(livro.paginas) / 2:
+            print("   ATENÇÃO: a maioria das páginas não tem texto (PDF digitalizado). Rode um OCR "
+                  "antes, por exemplo: ocrmypdf -l por entrada.pdf saida.pdf")
+        elif sem_texto:
+            print(f"   Páginas sem texto (figuras ou em branco): {len(sem_texto)}")
+        for c in livro.capitulos:
+            print(f"   p. {c.paginas:>9}  ~{c.tokens:>6} tokens  [{', '.join(c.temas)}]  {c.titulo}")
+
+    limite = janela_tokens // 2
+    print(f"\nSugestão de blocos (cada um deve ter até ~{limite} tokens):")
+    for tema, itens in sorted(agrupar_por_tema(livros).items()):
+        tokens = sum(c.tokens for _, c in itens)
+        alerta = "  ATENÇÃO: grande demais, divida por espécie ou subtema" if tokens > limite else ""
+        print(f"\n# ----- {tema}/bloco.toml (~{tokens} tokens){alerta}")
+        print(esboco_bloco_toml(tema, itens))
+    print("Revise os temas, salve cada bloco em <acervo>/<tema>/bloco.toml e rode `ipeia verificar`.")
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="ipeia")
     sub = parser.add_subparsers(dest="comando", required=True)
@@ -68,6 +104,10 @@ def main(argv: list[str] | None = None) -> None:
     conversa.add_argument("--telefone", default=TELEFONE_DEMO)
     sub.add_parser("expirar")
     sub.add_parser("verificar")
+    ingerir = sub.add_parser("ingerir")
+    ingerir.add_argument("pdfs", nargs="+", type=Path)
+    ingerir.add_argument("--slug", help="nome da pasta do livro (padrão: nome do arquivo)")
+    ingerir.add_argument("--destino", type=Path, help="padrão: <IPEIA_ACERVO_DIR>/_livros")
     args = parser.parse_args(argv)
 
     cfg = obter_configuracao()
@@ -95,7 +135,13 @@ def main(argv: list[str] | None = None) -> None:
         excedentes = acervo.verificar_tamanho(cfg.cag_janela_tokens)
         for e in excedentes:
             print("ATENÇÃO, bloco grande demais:", e)
-        sys.exit(1 if excedentes else 0)
+        pendencias = acervo.pendencias()
+        for p in pendencias:
+            print("ATENÇÃO,", p)
+        sys.exit(1 if excedentes or pendencias else 0)
+    elif args.comando == "ingerir":
+        _ingerir(args.pdfs, args.slug, args.destino or cfg.acervo_dir / PASTA_LIVROS,
+                 cfg.cag_janela_tokens)
 
 
 if __name__ == "__main__":
