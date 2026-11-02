@@ -71,6 +71,19 @@ Preços por segundo da GPU no Modal, consultados em 2 de novembro de 2026: L4 a 
 
 Somam-se a isso valores aproximados que não conferi em tabela de preços: backend e fila (menos de US$ 10 por mês), PostgreSQL gerenciado (de US$ 0 a US$ 25 por mês) e armazenamento de áudio (menos de US$ 1 por mês). As respostas no WhatsApp dentro da janela de 24 horas são gratuitas. Os alertas ativos fora da janela usam modelos de mensagem, que são cobrados por mensagem. O plano Starter do Modal inclui US$ 30 por mês em créditos, e há bolsas para uso acadêmico.
 
+### Como baratear
+
+A melhor forma de reduzir o custo é pagar só pelo uso enquanto o volume for baixo e mudar para um servidor dedicado de preço fixo quando o volume chegar perto de 1.000 requisições por dia.
+
+| Opção | Custo mensal estimado | O que se perde | Quando usar |
+| --- | --- | --- | --- |
+| **Piloto em escala a zero** (Modal, sem horário aquecido) | De US$ 0 a 30 para até 100 requisições por dia, coberto pelos créditos do plano Starter | Partida a frio de 30 a 90 s em quase toda mensagem, e o KV-Cache do acervo é perdido entre as conversas | MVP com 1 a 5 fazendas |
+| **Servidor dedicado Hetzner GEX45** (RTX PRO 4000, 24 GB) | €214 por mês mais €209 de instalação, ligado 24 horas ([comparativo](https://wz-it.com/en/blog/hetzner-gpu-server-comparison/)) | Escalar exige comprar outro servidor. Fica em Helsinque, o que conta como transferência internacional de dados pela LGPD | A partir de cerca de 300 requisições por dia, porque sai mais barato que a L4 aquecida e não tem partida a frio |
+| **Modelo quantizado em 4 bits** (AWQ) | Permite GPUs menores e mais baratas, ou o 14B numa placa de 24 GB | Possível perda de acurácia na extração, a medir no teste do RNF01 | Se o 14B for necessário |
+| **API por token** (Featherless, plano pay-as-you-go, que tem modelos Amadeus-Verbo) | Depende de cotação. Pode ser o mais barato em volume baixo | Não há controle do KV-Cache, e cada pergunta paga o bloco inteiro do acervo. A política de privacidade do plano pay-as-you-go não está publicada ([planos](https://featherless.ai/docs/plans)) | Só depois de confirmar por contrato que os dados não são registrados nem usados para treino |
+
+Com 1.000 requisições por dia, o servidor dedicado custa cerca de €0,007 por requisição, cerca de um terço a menos que o cenário recomendado acima (convertendo o euro a cerca de US$ 1,10, valor aproximado). Os preços da Hetzner vêm de um comparativo de 13 de outubro de 2026 e devem ser conferidos na página de pedido.
+
 Fora do horário aquecido, a primeira mensagem sofre uma partida a frio: o modelo precisa ser carregado (estimo de 30 a 90 segundos) e o bloco do acervo, reprocessado. Por isso, o RNF08 prevê um aviso imediato e resposta em até 3 minutos nesses horários.
 
 ## 5. Próximo passo (passo 3)
