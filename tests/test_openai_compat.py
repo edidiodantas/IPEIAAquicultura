@@ -21,3 +21,13 @@ def test_chamada_deterministica_com_esquema():
     assert enviado["temperature"] == 0.0 and enviado["seed"] == 42
     assert enviado["response_format"]["json_schema"]["schema"] == esquema
     assert enviado["messages"][0] == {"role": "system", "content": "sistema"}
+
+
+def test_whisper_local_recebe_dispositivo_e_tipo(cfg):
+    """No servidor de 6 GB o Whisper pode ir para a CPU sem mexer no código."""
+    from ipeia.inferencia.fabrica import criar_transcritor
+
+    cfg = cfg.model_copy(update={"stt_backend": "faster_whisper", "stt_dispositivo": "cpu",
+                                 "stt_tipo_computacao": "int8"})
+    transcritor = criar_transcritor(cfg)
+    assert transcritor._dispositivo == "cpu" and transcritor._tipo_computacao == "int8"

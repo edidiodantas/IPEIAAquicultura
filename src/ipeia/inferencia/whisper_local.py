@@ -10,16 +10,19 @@ from .base import VOCABULARIO_AQUICOLA, Transcricao
 
 
 class TranscritorFasterWhisper:
-    def __init__(self, modelo: str = "large-v3-turbo", dispositivo: str = "auto"):
+    def __init__(self, modelo: str = "large-v3-turbo", dispositivo: str = "auto",
+                 tipo_computacao: str = "default"):
         self._nome_modelo = modelo
         self._dispositivo = dispositivo
+        self._tipo_computacao = tipo_computacao
         self._modelo = None
 
     def _carregar(self):
         if self._modelo is None:
             from faster_whisper import WhisperModel  # importação tardia: dependência opcional
 
-            self._modelo = WhisperModel(self._nome_modelo, device=self._dispositivo)
+            self._modelo = WhisperModel(self._nome_modelo, device=self._dispositivo,
+                                        compute_type=self._tipo_computacao)
         return self._modelo
 
     def transcrever(self, audio: bytes, mime: str = "audio/ogg") -> Transcricao:

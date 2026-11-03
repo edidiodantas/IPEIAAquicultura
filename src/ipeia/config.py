@@ -19,11 +19,14 @@ class Configuracao(BaseSettings):
     database_url: str = "sqlite:///./ipeia.db"
     fuso_horario: str = "America/Sao_Paulo"
 
-    # Motor de linguagem (RNF01). "openai" cobre vLLM local, Modal, Hetzner e APIs por token.
+    # Motor de linguagem (RNF01). "openai" cobre llama-server (llama.cpp) no servidor
+    # próprio, vLLM no Modal ou Hetzner e APIs por token.
     llm_backend: Literal["mock", "openai"] = "mock"
     llm_base_url: str = "http://localhost:8000/v1"
     llm_api_key: str = ""
-    llm_modelo: str = "amadeusai/Amadeus-Verbo-MI-Qwen2.5-7B-PT-BR-Instruct"
+    # Nome exato do repositório no Hugging Face. No llama-server (servidor próprio) o
+    # nome é só um rótulo, mas mantemos o oficial para a trilha de auditoria.
+    llm_modelo: str = "amadeusai/Amadeus-Verbo-MI-Qwen-2.5-7B-PT-BR-Instruct-Experimental"
     llm_timeout_s: float = 180.0
     llm_semente: int = 42
 
@@ -32,6 +35,11 @@ class Configuracao(BaseSettings):
     stt_base_url: str = "http://localhost:8001/v1"
     stt_api_key: str = ""
     stt_modelo: str = "large-v3-turbo"
+    # faster-whisper local: "cuda", "cpu" ou "auto". Com o 7B numa GPU de 6 GB,
+    # o Whisper vai para a CPU (ver docs/servidor-proprio.md).
+    stt_dispositivo: Literal["auto", "cuda", "cpu"] = "auto"
+    # "int8" na CPU, "int8_float16" ou "float16" na GPU; "default" deixa a biblioteca escolher.
+    stt_tipo_computacao: str = "default"
     stt_confianca_minima: float = 0.6
 
     # WhatsApp (RF02).
