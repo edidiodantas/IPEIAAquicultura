@@ -39,7 +39,7 @@ A RAM de 16 GB comporta o PostgreSQL, a API, o Whisper na CPU (perfil B) e 4 GB 
 ## 3. Por que llama.cpp e não vLLM nem Ollama
 
 - **vLLM** foi pensado para GPU grande. Ele reserva a memória toda de uma vez, e o 7B em AWQ mais o KV-Cache não cabe em 6 GB com folga. Continua sendo a escolha para a nuvem (docs/arquitetura.md).
-- **Ollama** é simples, mas usa uma janela padrão pequena e corta o texto sem avisar quando o prompt passa dela. No CAG isso apaga parte do manual em silêncio, o que é perigoso.
+- **Ollama** funciona, mas usa uma janela padrão pequena e corta o texto sem avisar quando o prompt passa dela. No CAG isso apaga parte do manual em silêncio. Se o servidor já tem Ollama, dá para usar fixando a janela (seção 7).
 - **llama-server** fala a mesma API da OpenAI que o projeto já usa. Ele aceita `response_format` com `json_schema` (conferido no código do servidor), então a decodificação guiada do RF03 funciona sem mudar nada no adaptador. Ele também guarda o KV-Cache de prompts anteriores na RAM (`--cache-ram`) e reaproveita o prefixo igual (o bloco do acervo), o que atende o RNF05 com um único slot.
 
 ## 4. Latência esperada para um áudio de 20 segundos
@@ -71,20 +71,51 @@ Um modelo menor erra mais, mas o erro aparece como "não entendi" ou "não encon
 3. Comparar: extrações corretas na primeira tentativa, respostas do CAG com citação válida e tempo até os botões.
 4. Ficar com o 3B se a diferença for pequena. Passar para o 7B (ou para a nuvem) se o 3B errar muito na extração.
 
-## 7. Instalação resumida
+## 7. Instalação no servidor
+
+O servidor já tem Python e um "llama" instalados, e a RTX 3050 de 6 GB é o modelo novo (2024), que foi a base das estimativas acima. Primeiro, confira qual "llama" está instalado:
 
 ```bash
-# Driver NVIDIA e CUDA Toolkit já instalados (nvidia-smi funcionando).
-sudo git clone https://github.com/ggml-org/llama.cpp /opt/llama.cpp
-cd /opt/llama.cpp && sudo cmake -B build -DGGML_CUDA=ON && sudo cmake --build build -j
+nvidia-smi                    # a placa e o driver aparecem?
+which llama-server ollama     # llama.cpp, Ollama ou os dois?
+python3 --version             # o projeto pede 3.11 ou mais novo
+```
 
-pip install -U "huggingface_hub[cli]" -r /opt/llama.cpp/requirements.txt
+### Se for o llama.cpp (`llama-server`)
+
+Não precisa compilar de novo. Confira se ele foi compilado com CUDA (`llama-server --list-devices` deve mostrar a RTX 3050) e ajuste o caminho na unidade systemd e no script, se não estiver em `/opt/llama.cpp`.
+
+```bash
+export LLAMA_CPP=/caminho/do/llama.cpp     # onde estão convert_hf_to_gguf.py e build/bin
+pip install -U "huggingface_hub[cli]" -r $LLAMA_CPP/requirements.txt
 deploy/preparar_modelo.sh 3B Q6_K       # perfil A
 deploy/preparar_modelo.sh 7B Q4_K_M     # perfil B, para a comparação
 
-sudo cp deploy/llama-server.service /etc/systemd/system/
+sudo cp deploy/llama-server.service /etc/systemd/system/   # corrija o caminho do llama-server
 sudo systemctl daemon-reload && sudo systemctl enable --now llama-server
+```
 
+### Se for o Ollama
+
+O Ollama também serve, com dois cuidados:
+
+1. **Fixar a janela.** O Ollama usa uma janela padrão pequena e corta o começo do prompt sem avisar. Defina a janela no Modelfile e use o mesmo valor em `IPEIA_CAG_JANELA_TOKENS`.
+2. **Importar o GGUF.** Não há Amadeus-Verbo na biblioteca do Ollama. Gere o GGUF com o `preparar_modelo.sh` (ele precisa só do código-fonte do llama.cpp, sem compilar a parte de GPU) e importe:
+
+```bash
+cat > Modelfile <<'MF'
+FROM /srv/ipeia/modelos/amadeus-verbo-mi-3b-Q6_K.gguf
+PARAMETER num_ctx 32768
+PARAMETER temperature 0
+MF
+ollama create amadeus-verbo-3b -f Modelfile
+```
+
+No `.env`, use `IPEIA_LLM_BASE_URL=http://127.0.0.1:11434/v1` e `IPEIA_LLM_MODELO=amadeus-verbo-3b`. O Ollama aceita o `response_format` com `json_schema` no endpoint compatível com a OpenAI. A diferença em relação ao llama-server é o cache: o Ollama guarda só o último prompt, então alternar entre manejo e consulta técnica faz o bloco do acervo ser reprocessado (cerca de 8 s a mais). Para um único usuário isso é aceitável.
+
+### O projeto
+
+```bash
 pip install -e ".[postgres,whisper-local]"
 cp .env.example .env   # e ativar o bloco "Perfil A" no fim do arquivo
 uvicorn ipeia.api.app:app --host 127.0.0.1 --port 8080
