@@ -1,0 +1,94 @@
+==============================================================================
+               02 - ESPECIFICAÇÃO: DA VERSÃO 1 PARA A VERSÃO 2
+==============================================================================
+
+Arquivo de origem: docs/especificacao-v2.md
+
+
+POR QUE REVISAR
+---------------
+
+A v1 estava bem orientada, mas tinha três pontos que não funcionariam como
+escritos, e algumas lacunas. Corrigir no papel custa muito menos que
+corrigir depois do código pronto.
+
+
+AS TRÊS FALHAS PRINCIPAIS DA v1
+-------------------------------
+
+1. Serverless puro x KV-Cache (RNF04 x RNF05)
+   Um servidor que "escala a zero" desliga e perde o cache do acervo. Cada
+   pergunta reprocessaria o livro inteiro.
+   Correção: instância aquecida no horário de manejo, ou provedor com cache
+   de prefixo. A meta de custo vira mensal, com uma parte fixa.
+
+2. O acervo inteiro não cabe na janela do modelo (RF06 / RNF05)
+   Um manual tem de 60 mil a 200 mil tokens (estimativa). O modelo 7B lê
+   32 mil, ou 128 mil com extensão.
+   Correção: dividir o acervo em blocos temáticos (sanidade, qualidade da
+   água, nutrição...). O roteador escolhe o bloco, e só ele fica em cache.
+
+3. O WhatsApp não informa a hora em que o áudio foi gravado (RNF06)
+   O webhook traz a hora em que o servidor recebeu a mensagem, que pode ser
+   horas depois, quando o celular pegou sinal.
+   Correção: gravar três horários: o do manejo dito no áudio ("tratei às
+   7h"), o do recebimento e o do processamento.
+
+
+AS DEMAIS CORREÇÕES
+-------------------
+
+  RNF02  Temperatura zero reduz a variação, mas não garante a verdade.
+         -> O modelo tem de citar o trecho do manual.
+  RNF03  Um modelo 7B não obedece a uma ordem de recusa com segurança.
+         -> O CÓDIGO procura a citação no acervo. Se não achar, troca a
+            resposta pela frase padrão "Não encontrei essa informação...".
+  RF02 x RF05  A ordem não estava definida.
+         -> Primeiro valida, depois pede confirmação. Expira em 24 h.
+  RF07   Se o modelo escrever o aviso legal, pode esquecê-lo.
+         -> O código anexa o aviso.
+  Roteamento  Citado na introdução, sem requisito próprio. -> Novo RF08.
+
+
+A CAMADA TRIPLA DE PROTEÇÃO, DEFINIDA
+-------------------------------------
+
+  1. Validação zootécnica por código (RF05).
+  2. Confirmação humana no WhatsApp (RF02).
+  3. Barreira de citação com aviso legal no módulo técnico (RNF03, RF07).
+
+Nenhuma das três depende de o modelo de IA "se comportar". Esse é o
+princípio que guiou todo o resto: a IA interpreta, o código decide.
+
+
+REQUISITOS NOVOS
+----------------
+
+  RF08   Roteamento de intenção (manejo, consulta, correção, outro).
+  RF09   Cadastro da propriedade (tanques, apelidos, lotes, peso do saco,
+         usuários autorizados).
+  RF10   Correção e estorno sem apagar o registro original.
+  RNF08  Tempo de resposta: 30 s para manejo, 60 s para dúvida técnica.
+  RNF09  Trilha de auditoria (áudio, transcrição, JSON, validação, quem
+         confirmou e quando).
+  RNF10  Versionamento do acervo (versão e data de homologação).
+  RNF11  Testes de regressão a cada troca de modelo, prompt ou acervo.
+
+Os RF01 a RF07 mantiveram a numeração original e foram reescritos para
+ficarem verificáveis. Exemplos: o RF03 passou a aceitar vários tanques num
+mesmo áudio e unidades como "meio saco"; o RF05 ganhou dois níveis (alerta,
+que o produtor pode confirmar com justificativa, e bloqueio).
+
+
+DECISÕES QUE FICARAM COM VOCÊ
+-----------------------------
+
+  [ ] Teto de custo mensal em reais.
+  [ ] Espécies do MVP (só tilápia, ou também tambaqui e camarão).
+  [ ] Quem assina os limites zootécnicos do RF05.
+  [ ] Quais manuais entram no acervo, e se têm licença de uso.
+  [ ] Consulta ao histórico pelo WhatsApp (seria o RF11).
+  [ ] Cadastro inicial por painel web ou só pelo WhatsApp.
+
+No código, cada uma virou configuração com um valor provisório, para que
+nada ficasse parado esperando (ver 04-construcao-do-software.txt).

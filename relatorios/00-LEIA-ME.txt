@@ -1,0 +1,61 @@
+==============================================================================
+                    IPEIAAquicultura - PANORAMA DO PROJETO
+                Relatórios para impressão - 2 de novembro de 2026
+==============================================================================
+
+Esta pasta reúne, em texto simples, tudo o que foi feito no projeto até agora,
+na ordem em que aconteceu. Cada arquivo cabe em linhas de até 80 colunas e
+pode ser impresso direto, sem formatação.
+
+Todos os números citados (arquivos, linhas, testes) foram conferidos no código
+do repositório, ramo main, no commit 85c109e (após a mescla do PR #2).
+
+
+ÍNDICE
+------
+
+  01-linha-do-tempo.txt ............ O que foi feito, em ordem cronológica.
+  02-especificacao.txt ............. Como a especificação v1 virou a v2 e
+                                     por quê.
+  03-arquitetura-e-custos.txt ...... Desenho da solução, GPU e custo mensal.
+  04-construcao-do-software.txt .... Como o código foi organizado: módulos,
+                                     fluxo de uma mensagem, banco de dados.
+  05-qualidade-e-testes.txt ........ Evidências de que o software foi bem
+                                     feito: testes, CI, demonstração real.
+  06-pendencias.txt ................ O que falta, o que depende de você e
+                                     os próximos passos (o livro vem aqui).
+
+
+RESUMO EM UMA PÁGINA
+--------------------
+
+O IPEIAAquicultura é um assistente de gestão aquícola que funciona pelo
+WhatsApp. O produtor manda um áudio ("dei 8 kg de ração no tanque da
+entrada") ou uma pergunta ("qual o oxigênio mínimo para tilápia?").
+O sistema transcreve, entende, confere os números e só grava depois que o
+produtor confirma. As dúvidas técnicas são respondidas apenas com trechos
+literais de manuais cadastrados, sempre com a fonte e um aviso legal.
+
+Em um dia de trabalho, o projeto passou por quatro etapas:
+
+  1. Revisão da especificação original (v1 -> v2): 8 correções e
+     6 requisitos novos.
+  2. Comparação com o IAboi, o equivalente para pecuária de corte.
+  3. Arquitetura e custo: uma GPU L4 com o Amadeus-Verbo 7B, cerca de
+     US$ 370 por mês aquecida 15 h/dia, e opções mais baratas.
+  4. Código do MVP (PR #1) e ingestão de livros em PDF para o acervo
+     técnico (PR #2). Os dois foram revisados e mesclados.
+
+Situação do código hoje:
+
+  - 49 arquivos Python, 3.026 linhas de código-fonte.
+  - 11 arquivos de teste, 797 linhas, 61 funções de teste
+    (68 casos, contando os parametrizados).
+  - Resultado: 67 testes passam; 1 é pulado de propósito na máquina local
+    (o do PostgreSQL real, que roda no CI do GitHub).
+  - Roda inteiro num computador comum, sem GPU, com o simulador de
+    WhatsApp no terminal.
+
+O que trava a ida a campo não é código: são decisões e conteúdo que só você
+pode fornecer (os livros, os limites zootécnicos assinados por um
+responsável técnico, a escolha da hospedagem). Ver 06-pendencias.txt.

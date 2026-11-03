@@ -1,0 +1,124 @@
+==============================================================================
+                     03 - ARQUITETURA E CUSTO ESTIMADO
+==============================================================================
+
+Arquivo de origem: docs/arquitetura.md
+Valores em dólar, consultados em 2 de novembro de 2026. São estimativas e
+devem ser medidos com os manuais reais antes de contratar.
+
+
+A PROPOSTA EM UMA FRASE
+-----------------------
+
+Um backend leve e barato (webhook, fila, banco) e UMA GPU L4 rodando o
+Amadeus-Verbo 7B (no vLLM) e o Whisper juntos, ligada nos horários de
+manejo e desligada no resto do dia.
+
+
+CAMINHO DE UMA MENSAGEM
+-----------------------
+
+  Produtor (WhatsApp)
+     |
+     v
+  Webhook -------> confere assinatura, descarta repetida, responde rápido
+     |
+     v
+  Fila -> Worker
+     |
+     +-- áudio --> Whisper (vocabulário aquícola) --+
+     |                                              |
+     +-- texto -------------------------------------+
+                                                    v
+                                     Roteador de intenção (RF08)
+                    +-------------------+-----------+-----------------+
+                    |                   |                             |
+                 MANEJO             CONSULTA                     CORREÇÃO
+                    |                   |                             |
+          Extração JSON (RF03)   Escolhe o bloco do          Estorno ligado
+          Apelidos (RF04)        acervo; modelo com           ao original
+          Validação (RF05)       temperatura 0 e              (RF10)
+             |      |            KV-Cache (RNF05)                 |
+        bloqueio   ok/alerta           |                          |
+             |      |            Citação existe?                  |
+          avisa  Pendência        sim: resposta + fonte           |
+                 + botões              + aviso legal              |
+                 (RF02)           não: frase padrão               |
+                    |                                             |
+              Confirmar --> PostgreSQL com isolamento <-----------+
+                            por fazenda (RNF07)
+
+
+COMPONENTES ESCOLHIDOS
+----------------------
+
+  Entrada ........ WhatsApp Cloud API (oficial, botões nativos; respostas
+                   dentro da janela de 24 h são gratuitas).
+  Backend ........ Função serverless (Modal, Cloud Run ou Lambda).
+  Transcrição .... faster-whisper no mesmo contêiner da GPU: o áudio não
+                   sai da infraestrutura do projeto.
+  Modelo ......... Amadeus-Verbo 7B, licença Apache-2.0, baseado no
+                   Qwen2.5. O 14B só entra se o 7B não atingir a meta.
+  Saída JSON ..... Decodificação guiada por esquema: o modelo não consegue
+                   gerar um JSON fora do formato.
+  Banco .......... PostgreSQL gerenciado, criptografado, com row-level
+                   security por fazenda.
+  Acervo ......... Blocos temáticos versionados.
+
+
+A GPU CABE?
+-----------
+
+  Modelo 7B ............ cerca de 15 GB
+  KV-Cache de um bloco
+  de 40 mil tokens ..... cerca de 2,3 GB
+  Whisper turbo ........ cerca de 2 GB
+  Total ................ cabe numa L4 de 24 GB, com folga.
+  O 14B precisaria de uma L40S de 48 GB (mais que o dobro do preço).
+
+
+CUSTO MENSAL (1.000 requisições por dia)
+----------------------------------------
+
+  Cenário                     GPU / horas      US$/mês   US$/requisição
+  --------------------------  ---------------  --------  --------------
+  Recomendado                 L4 7B, 15 h/dia     ~360        ~0,012
+  Econômico                   L4 7B,  8 h/dia     ~190        ~0,006
+  Modelo maior                L40S 14B, 15 h      ~880        ~0,029
+
+  Somam-se: backend e fila (menos de 10), banco (0 a 25), áudios (menos
+  de 1). Total do cenário recomendado: cerca de US$ 370 por mês.
+
+A meta da v1 ("frações de centavo por consulta") só é atingível com menos
+horas aquecidas ou dividindo a GPU entre mais clientes.
+
+
+COMO BARATEAR
+-------------
+
+  Piloto em escala a zero (Modal)
+     0 a 30 US$/mês para até 100 req/dia (coberto pelos créditos).
+     Perde: partida a frio de 30 a 90 s. Use no MVP com 1 a 5 fazendas.
+
+  Servidor dedicado Hetzner GEX45 (24 GB)
+     cerca de 214 euros/mês + 209 de instalação, ligado 24 h.
+     Perde: escala exige outro servidor; fica na Finlândia (LGPD).
+     Use a partir de ~300 req/dia. A 1.000 req/dia sai cerca de um terço
+     mais barato que a L4 aquecida.
+
+  Modelo quantizado em 4 bits
+     Permite GPU menor, ou o 14B numa placa de 24 GB.
+     Perde: possível queda de acurácia, a medir.
+
+  API por token (Featherless)
+     Pode ser o mais barato em volume baixo.
+     Perde: sem controle do cache; privacidade não documentada. Só com
+     contrato que proíba uso dos dados para treino.
+
+
+DECISÃO DE PROJETO QUE PROTEGE ESSA ESCOLHA
+-------------------------------------------
+
+Como a hospedagem ainda não está decidida, o código foi escrito para não
+depender dela: trocar de "sem GPU" para "Modal" ou "Hetzner" é mudar duas
+ou três linhas de configuração, sem tocar no código.

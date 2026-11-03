@@ -1,0 +1,104 @@
+==============================================================================
+                       01 - LINHA DO TEMPO DO PROJETO
+==============================================================================
+
+Horários de Brasília, 2 de novembro de 2026. Cada etapa deixou um registro
+verificável no repositório GitHub edidiodantas/IPEIAAquicultura.
+
+
+ETAPA 0 - PONTO DE PARTIDA
+--------------------------
+
+Você entregou a especificação v1: 7 requisitos funcionais (RF01 a RF07) e
+7 não funcionais (RNF01 a RNF07). A base era sólida: WhatsApp com voz,
+modelo brasileiro Amadeus-Verbo, validação por código, confirmação humana,
+respostas técnicas só a partir de manuais (CAG) e isolamento dos dados.
+O pedido foi: "se tiver alguma correção ou melhoria, faça".
+
+
+ETAPA 1 - COMPARAÇÃO COM O IAboi (por volta das 18h50)
+------------------------------------------------------
+
+Você pediu para olhar o IAboi (iaboi.com.br), que faz algo parecido para
+pecuaristas. O site não abriu na rede do ambiente, então a análise usou
+matérias de imprensa de 2025.
+
+Conclusões:
+  - O IAboi registra o ciclo inteiro do animal (nascimento, compra,
+    pesagem, venda, morte) e devolve indicadores e alertas.
+  - Sugestões para o nosso sistema: consulta a indicadores (conversão
+    alimentar, biomassa, sobrevivência), eventos do ciclo do lote
+    (povoamento, biometria, despesca), resumo semanal, alertas proativos,
+    papéis de usuário, e a regra de que números são calculados pelo
+    código, nunca pelo modelo.
+  - Nossos diferenciais: qualidade da água e a Camada Tripla de Proteção.
+  - Modelo de negócio deles: parceria com associação de produtores
+    (APRON, Rondônia). O equivalente aqui seriam cooperativas de
+    piscicultores.
+
+Entrega: documento de comparação (artefato no claude.ai).
+
+
+ETAPA 2 - ESPECIFICAÇÃO v2 E ARQUITETURA (19h00, commit ac703ee)
+----------------------------------------------------------------
+
+  - docs/especificacao-v2.md: 8 correções na v1, 3 RF novos (RF08 a RF10),
+    4 RNF novos (RNF08 a RNF11) e 6 decisões em aberto para você.
+  - docs/arquitetura.md: fluxo do áudio ao banco, componentes, tamanho da
+    GPU e custo mensal estimado.
+  Detalhes nos arquivos 02 e 03.
+
+
+ETAPA 3 - COMO BARATEAR (19h03, commit b3d24d6)
+-----------------------------------------------
+
+Seção "Como baratear" na arquitetura: piloto em escala a zero (coberto
+pelos créditos gratuitos), servidor dedicado de preço fixo (Hetzner),
+modelo quantizado em 4 bits e API cobrada por token, cada um com o que se
+perde e quando usar.
+
+
+ETAPA 4 - NÚCLEO DO MVP (PR #1, commit 4f326d8, mesclado às 20h41)
+------------------------------------------------------------------
+
+71 arquivos e cerca de 3.600 linhas adicionadas. Tudo o que a v2 pede para
+o fluxo principal foi codificado:
+
+  - Webhook do WhatsApp com verificação de assinatura e descarte de
+    mensagem repetida.
+  - Roteador de intenção (manejo, consulta, correção, outro).
+  - Extração estruturada em JSON, apelidos de tanques, conversão de
+    "meio saco" em kg.
+  - Validação zootécnica em Pydantic com dois níveis (alerta e bloqueio).
+  - Confirmação com botões Confirmar / Corrigir / Cancelar e expiração
+    em 24 horas.
+  - Correção de lançamentos por estorno, sem apagar o original.
+  - CAG com barreira de citação e aviso legal anexado pelo código.
+  - Banco com isolamento por fazenda (row-level security no PostgreSQL).
+  - Adaptadores de inferência trocáveis: roda sem GPU (mock), com vLLM
+    próprio, no Modal ou numa API por token, só mudando configuração.
+  - Simulador de WhatsApp no terminal e testes automáticos com CI.
+
+
+ETAPA 5 - INGESTÃO DE LIVROS PARA O CAG (PR #2, commit 2160c00,
+          mesclado às 20h55)
+---------------------------------------------------------------
+
+9 arquivos e cerca de 650 linhas. Preparou o sistema para receber os
+livros técnicos:
+
+  - Comando "ipeia ingerir livro.pdf": extrai texto e sumário, remove
+    cabeçalhos, rodapés e hifenização, conta tokens por capítulo e sugere
+    em que bloco temático cada capítulo deve entrar.
+  - Os blocos do acervo passam a usar trechos de livros por intervalo de
+    páginas, citando o número impresso na página.
+  - "ipeia verificar" passa a falhar se um manual não tiver licença ou
+    data de homologação (RNF10).
+  - Os livros ficam fora do repositório público (direitos autorais).
+
+
+ETAPA 6 - ESTE PANORAMA (agora)
+-------------------------------
+
+Relatórios em texto para impressão, nesta pasta, antes de começar a
+carregar o livro.
