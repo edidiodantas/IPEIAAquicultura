@@ -1,0 +1,10 @@
+descricao = "Sanidade da tilápia em viveiros e tanques-rede: estreptococose (olho saltado, peixe girando), franciselose (pontos brancos no baço, água fria), columnariose, ictio (pontos brancos na pele), parasitas nas brânquias, mortalidade de tilápia, quarentena de alevinos"
+versao = "2026.11-rascunho"
+
+[[manuais]]
+arquivo = "fichas-sanidade-tilapia.md"
+titulo = "Fichas técnicas IPEIA: sanidade da tilápia"
+fonte = "Fichas técnicas IPEIA (rascunho para revisão)"
+versao = "0.1"
+homologado_em = ""
+licenca = "obra própria (IPEIA)"

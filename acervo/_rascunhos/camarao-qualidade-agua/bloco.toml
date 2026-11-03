@@ -1,0 +1,10 @@
+descricao = "Qualidade da água no cultivo de camarão marinho (vannamei): oxigênio dissolvido, salinidade, temperatura, pH, alcalinidade, amônia, nitrito, transparência, calagem, aeradores, camarão na beira do viveiro"
+versao = "2026.11-rascunho"
+
+[[manuais]]
+arquivo = "fichas-agua-camarao.md"
+titulo = "Fichas técnicas IPEIA: qualidade da água no cultivo de camarão"
+fonte = "Fichas técnicas IPEIA (rascunho para revisão)"
+versao = "0.1"
+homologado_em = ""
+licenca = "obra própria (IPEIA)"

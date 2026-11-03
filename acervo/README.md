@@ -55,6 +55,15 @@ daquele tema.
 
 4. Rode `ipeia verificar` e teste perguntas no `ipeia conversar`.
 
+## Fichas técnicas IPEIA
+
+Para assuntos em que o melhor material é um livro protegido, o responsável técnico
+escreve fichas com as próprias palavras, usando o livro como fonte dos fatos e
+citando-o nas referências. O modelo está em `_modelos/ficha-tecnica.md`. As
+fichas em revisão ficam em `_rascunhos/`, que o sistema não carrega. Depois da
+homologação, a pasta do bloco é movida para `acervo/`. A lista de fontes abertas
+está em `FONTES.md`.
+
 ## Direitos autorais
 
 O texto dos livros é protegido. `acervo/_livros/` e arquivos `.pdf` estão no
