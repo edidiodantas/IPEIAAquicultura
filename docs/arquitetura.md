@@ -58,6 +58,7 @@ As três camadas de proteção aparecem em sequência: a validação por código
 - O Amadeus-Verbo 7B em bf16 ocupa cerca de 15 GB. O Qwen2.5-7B usa cerca de 56 KB de KV-Cache por token (28 camadas, 4 cabeças KV de dimensão 128). Assim, um bloco de 40 mil tokens ocupa cerca de 2,3 GB. O faster-whisper turbo ocupa cerca de 2 GB. Tudo cabe numa L4 de 24 GB, com folga para algumas perguntas simultâneas.
 - O 14B em bf16 ocupa cerca de 30 GB e precisa de uma L40S (48 GB). Por isso, o 14B só entra se o 7B não atingir a meta de acurácia do RNF01.
 - Os números de memória são estimativas e devem ser medidos com o vLLM antes de fixar a GPU.
+- Para o piloto num servidor próprio com GPU de 6 GB, ver [servidor-proprio.md](servidor-proprio.md): 3B ou 7B quantizado em GGUF, servido pelo llama.cpp.
 
 ## 4. Custo mensal estimado (1.000 requisições por dia)
 

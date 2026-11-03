@@ -23,7 +23,8 @@ def criar_transcritor(cfg: Configuracao) -> Transcritor:
     if cfg.stt_backend == "faster_whisper":
         from .whisper_local import TranscritorFasterWhisper
 
-        return TranscritorFasterWhisper(cfg.stt_modelo)
+        return TranscritorFasterWhisper(cfg.stt_modelo, cfg.stt_dispositivo,
+                                        cfg.stt_tipo_computacao)
     from .openai_compat import TranscritorOpenAICompat
 
     return TranscritorOpenAICompat(cfg.stt_base_url, cfg.stt_modelo, cfg.stt_api_key)
