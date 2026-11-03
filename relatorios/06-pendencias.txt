@@ -1,0 +1,81 @@
+==============================================================================
+                   06 - PENDÊNCIAS E PRÓXIMOS PASSOS
+==============================================================================
+
+
+ONDE ESTAMOS NO PLANO
+---------------------
+
+  1. Revisar a especificação ...................... CONCLUÍDO
+  2. Arquitetura e custo .......................... CONCLUÍDO
+                                                    (aguarda decisões)
+  3. Núcleo do MVP com inferência trocável ........ CONCLUÍDO (PR #1)
+     Ingestão de livros para o acervo ............. CONCLUÍDO (PR #2)
+  4. Carregar o acervo real (o livro) ............. PRÓXIMO PASSO
+  5. Piloto: critérios de aceite e áudios reais ... A FAZER
+
+
+O QUE DEPENDE DE VOCÊ
+---------------------
+
+Estes itens não são programação: são conteúdo e decisões que só você (ou
+um responsável técnico) pode dar. Sem eles o sistema roda, mas não pode ir
+a campo.
+
+  [ ] Os livros e manuais em PDF, com a licença de cada um (inclusive os
+      seus próprios, conferindo o contrato com a editora).
+  [ ] Os limites zootécnicos assinados por um Engenheiro de Pesca, para
+      substituir os valores provisórios de config/limites.toml.
+  [ ] Espécies do MVP (hoje: tilápia e tambaqui, provisório).
+  [ ] Teto de custo mensal e onde hospedar (Modal, Hetzner ou outro).
+  [ ] Conferir a licença comercial do Amadeus-Verbo (Apache-2.0 segundo
+      a página do modelo; confirmar antes do lançamento).
+  [ ] Número do WhatsApp Business e conta na Cloud API da Meta.
+  [ ] Consulta ao histórico pelo WhatsApp: entra ou não (RF11)?
+  [ ] Cadastro inicial por painel web ou só pelo WhatsApp?
+
+
+O QUE FALTA NO CÓDIGO
+---------------------
+
+  - Guardar o áudio original com expiração de 90 dias (RNF07, RNF09).
+    Hoje só o ID da mídia e a transcrição são gravados.
+  - Fila gerenciada para produção (SQS, Cloud Tasks ou Modal). Hoje a
+    fila roda em threads, o que serve para o piloto pequeno.
+  - Painel web de cadastro (RF09). Hoje é por código e pelo WhatsApp
+    (apelidos).
+  - Migrações de banco (Alembic) quando o esquema estabilizar.
+  - Conjunto de regressão com áudios reais (RNF01, RNF11).
+  - Ruff no CI e correção dos apontamentos cosméticos (ver 05).
+  - Remover os blocos "exemplo-*" do acervo antes de ir a campo.
+  - Itens sugeridos pela comparação com o IAboi, se aprovados:
+    indicadores (conversão alimentar, biomassa, sobrevivência), eventos do
+    ciclo (povoamento, biometria, despesca), resumo semanal, alertas
+    proativos e papéis de usuário.
+
+
+PRÓXIMO PASSO: O LIVRO
+----------------------
+
+  1. Você envia o(s) PDF(s). Se forem digitalizados (só imagem), passam
+     antes por OCR.
+  2. Rodo "ipeia ingerir", que mostra os capítulos, o tamanho de cada um
+     e o tema sugerido.
+  3. Montamos juntos os blocos temáticos (qualidade da água, sanidade,
+     nutrição...), cada um cabendo em metade da janela do modelo.
+  4. Você informa a fonte, a licença e a data de homologação.
+  5. "ipeia verificar" confere tudo, e testamos perguntas reais no
+     simulador.
+
+O texto do livro fica fora do repositório público, por direito autoral.
+
+
+DEPOIS DO LIVRO: O PILOTO
+-------------------------
+
+  - Coletar pelo menos 200 áudios reais de produtores.
+  - Medir a acurácia de extração do Amadeus-Verbo 7B (meta: 95% dos
+    campos corretos). Se não atingir, testar o 14B.
+  - Medir os tempos de resposta (meta: 30 s manejo, 60 s dúvida técnica).
+  - Rodar com 1 a 5 fazendas no cenário de escala a zero, com custo
+    coberto pelos créditos gratuitos.

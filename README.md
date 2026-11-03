@@ -6,6 +6,7 @@ Assistente de gestão aquícola via WhatsApp. O produtor manda um áudio com o m
 
 - [Especificação revisada (v2)](docs/especificacao-v2.md): requisitos funcionais e não funcionais, correções em relação à v1 e decisões em aberto.
 - [Arquitetura e custo estimado](docs/arquitetura.md): fluxo do áudio até o banco, componentes, dimensionamento da GPU e custo mensal.
+- [Relatórios para impressão](relatorios/00-LEIA-ME.txt): panorama em texto simples do que foi feito, em ordem cronológica.
 - [Guia de desenvolvimento](docs/desenvolvimento.md): como rodar localmente, trocar o motor de inferência e o mapa dos módulos.
 
 ## Começo rápido

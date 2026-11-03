@@ -1,0 +1,154 @@
+==============================================================================
+                  05 - QUALIDADE: EVIDÊNCIAS DE QUE FUNCIONA
+==============================================================================
+
+Tudo abaixo foi executado de novo em 2 de novembro de 2026, sobre o ramo
+main (commit 85c109e), para este relatório.
+
+
+1. TESTES AUTOMÁTICOS
+---------------------
+
+Comando: pytest -q
+Resultado: 67 passed, 1 skipped in 2.52s
+
+O teste pulado é o do PostgreSQL real, que precisa de um banco rodando.
+Ele roda no CI do GitHub (item 2).
+
+  Arquivo de teste         Testes  O que garante
+  -----------------------  ------  ----------------------------------------
+  test_fluxo.py                20  Conversa completa ponta a ponta:
+                                   confirmar, cancelar, corrigir, alerta
+                                   com justificativa, bloqueio, soma do dia,
+                                   mensagem repetida ignorada, expiração,
+                                   número não cadastrado, consentimento,
+                                   outro número não confirma, mensagem
+                                   mista, apelido novo, estorno, consulta.
+  test_validacao.py        11 (*)  Limites de ração e mortalidade, unidades
+                                   (kg, saco, meio saco), valores negativos,
+                                   tanque sem lote, espécie sem limites.
+  test_ingestao.py              6  Limpeza do PDF, capítulos e temas,
+                                   citação com página impressa, licença.
+  test_cag.py                   5  Resposta com citação e aviso; citação
+                                   inventada vira frase padrão; assunto fora
+                                   do acervo; bloco cabe na janela.
+  test_apelidos.py          5 (*)  Apelido exato, aproximado, ambíguo,
+                                   desconhecido, cadastro.
+  test_webhook.py               4  Verificação da Meta, assinatura inválida
+                                   recusada, leitura do JSON do WhatsApp.
+  test_tempo.py                 4  "Às 7h", "ontem", hora no futuro, sem
+                                   hora dita.
+  test_mock.py                  4  O modelo simulado se comporta como o real.
+  test_openai_compat.py         1  O adaptador HTTP envia temperatura 0,
+                                   semente e esquema JSON.
+  test_postgres_rls.py          1  Uma fazenda não enxerga a outra.
+
+  (*) alguns testes rodam com vários valores; por isso são 61 funções e
+      68 casos no total.
+
+O teste mais importante para a sua segurança jurídica é o
+"citação inventada vira frase padrão": ele simula o modelo inventando um
+trecho que não existe no manual e confere que o produtor recebe a frase de
+recusa, e não a invenção.
+
+
+2. INTEGRAÇÃO CONTÍNUA (CI)
+---------------------------
+
+Arquivo .github/workflows/testes.yml. A cada envio ao GitHub e a cada PR:
+  - sobe um PostgreSQL 16 de verdade;
+  - cria um usuário de aplicação que NÃO é dono das tabelas (para o
+    isolamento valer de fato);
+  - instala o projeto e roda todos os testes, inclusive o de isolamento.
+Os PRs #1 e #2 passaram no CI (verde) antes de serem mesclados.
+
+
+3. DEMONSTRAÇÃO REAL NO SIMULADOR
+---------------------------------
+
+Comandos: ipeia demo, depois ipeia conversar. Saída copiada do terminal:
+
+  Produtor: Dei 8 kg de ração no tanque da entrada e morreram 3 no
+            tanque do meio
+  Sistema:  Entendi assim:
+            - T1: 8 kg de ração, 02/11 às 20:58
+            - T2: 3 mortos, 02/11 às 20:58
+            Está correto? (vale por 24 horas)
+            [Confirmar] [Corrigir] [Cancelar]
+
+  Produtor: 100 kg no tanque 3
+  Sistema:  Não registrei nada desta mensagem:
+            - T3: 100 kg de ração no dia são 200,0% da biomassa (50 kg),
+              acima do máximo de 25%.
+            Corrija e envie de novo.
+
+  Produtor: Qual o oxigênio mínimo para tilápia?
+  Sistema:  Segundo o manual: Para a tilápia, o oxigênio dissolvido deve
+            ser mantido acima de 4 mg/L durante todo o ciclo.
+            Fonte: Manual de exemplo: qualidade da água (NÃO HOMOLOGADO),
+            p. 1: "Para a tilápia, o oxigênio dissolvido deve ser mantido
+            acima de 4 mg/L durante todo o ciclo."
+            Aviso: esta orientação vem de manuais técnicos e não substitui
+            um profissional. Antes de qualquer intervenção sanitária em
+            massa, valide com um Engenheiro de Pesca ou Médico
+            Veterinário.
+
+As três camadas de proteção aparecem nessa conversa: o apelido traduzido
+e o pedido de confirmação, o bloqueio por código e a resposta com citação
+e aviso. O manual de exemplo é fictício e está marcado como não homologado.
+
+Observação honesta: no simulador, o "modelo" é o mock, que entende frases
+por regras simples. Ele prova que o encanamento está certo, mas NÃO mede a
+acurácia do Amadeus-Verbo. Essa medição exige os 200 áudios reais do
+RNF01 (ver 06-pendencias.txt).
+
+
+4. VERIFICAÇÃO DO ACERVO
+------------------------
+
+Comando: ipeia verificar
+  Limites 0.1-provisorio (responsável: A DEFINIR): tilapia, tambaqui
+  Bloco exemplo-qualidade-agua: 1 manual, ~229 tokens
+  Bloco exemplo-sanidade: 1 manual, ~162 tokens
+O comando falha se algum bloco passar de metade da janela do modelo ou se
+algum manual não tiver licença ou data de homologação.
+
+
+5. REVISÃO DE ESTILO (análise estática)
+---------------------------------------
+
+O projeto ainda não tem um verificador de estilo configurado. Rodei o
+ruff com regras amplas para este relatório: 37 apontamentos, nenhum que
+impeça o funcionamento.
+  - 18 são cosméticos e corrigíveis automaticamente (ordem dos imports,
+    comentários "noqa" sobrando).
+  - 5 são "except Exception" na leitura de PDF: são de propósito, para um
+    PDF malformado não derrubar a ingestão, mas valem uma revisão.
+  - 2 usam a data local sem fuso ao gravar a data de ingestão de um
+    livro: inofensivo, mas vale padronizar.
+  - 1 aviso de "variável de laço em função interna" foi conferido e é
+    falso alarme (a função é usada na mesma volta do laço).
+Sugestão: adicionar o ruff ao CI numa próxima rodada.
+
+
+6. DOCUMENTAÇÃO
+---------------
+
+  README.md ................. Visão geral e começo rápido.
+  docs/especificacao-v2.md .. Requisitos e decisões em aberto.
+  docs/arquitetura.md ....... Arquitetura e custos.
+  docs/desenvolvimento.md ... Como rodar, trocar o motor, mapa dos módulos,
+                              o que falta.
+  acervo/README.md .......... Como montar o acervo e ingerir livros.
+  Os módulos principais começam com um comentário dizendo quais
+  requisitos atendem.
+
+
+CONCLUSÃO
+---------
+
+O software está bem construído para um MVP: segue a especificação v2
+requisito por requisito, tem as proteções implementadas em código (e não
+confiadas à IA), é testado automaticamente inclusive contra um banco real,
+e não depende da hospedagem que ainda vai ser escolhida. O que ele ainda
+não tem é validação em campo, que depende de dados reais (ver 06).

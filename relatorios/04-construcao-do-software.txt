@@ -1,0 +1,140 @@
+==============================================================================
+                    04 - COMO O SOFTWARE FOI CONSTRUÍDO
+==============================================================================
+
+Código em src/ipeia/ (Python 3.11 ou mais novo). Guia completo em
+docs/desenvolvimento.md.
+
+
+PRINCÍPIOS QUE GUIARAM O CÓDIGO
+-------------------------------
+
+1. A IA interpreta, o código decide.
+   O modelo só lê a fala e devolve dados estruturados. Quem confere os
+   limites, calcula os quilos, decide se grava e anexa o aviso legal é
+   código tradicional, testável e previsível.
+
+2. Inferência trocável.
+   O modelo de linguagem e o Whisper ficam atrás de duas interfaces
+   pequenas (gerar_json e transcrever). Há quatro implementações: uma
+   simulada (mock, sem GPU), uma para qualquer servidor no formato da API
+   da OpenAI (vLLM, Modal, provedores por token), o faster-whisper local e
+   o Whisper por HTTP. A escolha é feita por variáveis IPEIA_* no arquivo
+   .env.
+
+3. Decisões em aberto viram configuração, não bloqueio.
+   Espécies, limites zootécnicos, quem os assina, peso do saco e
+   hospedagem estão em arquivos de configuração com valores provisórios
+   marcados como "A DEFINIR". O código não precisa mudar quando você
+   decidir.
+
+4. Nada se apaga.
+   Correções viram estornos ligados ao registro original. Cada mensagem é
+   gravada uma vez (pelo ID do WhatsApp) com transcrição, JSON extraído e
+   resultado da validação (trilha de auditoria, RNF09).
+
+5. Módulos pequenos, um assunto cada.
+   O maior arquivo tem 288 linhas. A média é de cerca de 60.
+
+
+MAPA DOS MÓDULOS (linhas de código entre parênteses)
+----------------------------------------------------
+
+  whatsapp/ (143) ...... Recebe o webhook, confere a assinatura da Meta e
+                         envia respostas com botões.           RF01, RF02
+  inferencia/ (420) .... Interfaces e adaptadores do modelo e do Whisper.
+                         Temperatura 0 e semente fixa.   RF01, RNF01, RNF02
+  roteamento/ (56) ..... Classifica a mensagem e separa mensagens mistas
+                         ("dei ração e quero saber...").             RF08
+  manejo/ (695) ........ Extração, apelidos, conversão de unidades,
+                         limites e validação Pydantic, correção.
+                                                         RF03-RF05, RF10
+  confirmacao/ (105) ... Botões Confirmar/Corrigir/Cancelar, pedido de
+                         justificativa no alerta, expiração em 24 h. RF02
+  cag/ (673) ........... Acervo em blocos, escolha do bloco, barreira de
+                         citação, aviso legal, ingestão de PDF.
+                                              RF06, RF07, RNF03, RNF10
+  banco/ (252) ......... Tabelas (fazendas, usuários, tanques, apelidos,
+                         lotes, mensagens, pendências, lançamentos,
+                         consultas) e sessão com isolamento.  RNF07, RNF09
+  tempo.py (51) ........ Os três horários (manejo, recebimento,
+                         processamento); "às 7h" no futuro vira ontem. RNF06
+  orquestrador.py (171)  Recebe a mensagem e chama o fluxo certo.
+  fila.py (46) ......... Fila assíncrona (hoje em threads).          RNF06
+  api/ (63) ............ Servidor web: webhook e rota /saude.
+  cli.py (148) ......... Comandos: demo, conversar, criar-banco, expirar,
+                         verificar, ingerir.
+  cadastro.py (62) ..... Cadastro de fazenda e fazenda de demonstração. RF09
+
+  Arquivos de apoio:
+  config/limites.toml .. Limites zootécnicos por espécie e fase.
+  acervo/ .............. Blocos temáticos (hoje só dois de exemplo).
+  sql/rls_postgres.sql . Regras de isolamento por fazenda no PostgreSQL.
+  docker-compose.yml ... PostgreSQL local para desenvolvimento.
+  .github/workflows/ ... Testes automáticos a cada envio ao GitHub.
+
+
+O QUE ACONTECE COM UMA MENSAGEM DE MANEJO
+-----------------------------------------
+
+Exemplo: "Dei 8 kg de ração no tanque da entrada e morreram 3 no tanque
+do meio."
+
+  1. O webhook confere a assinatura e se o ID já foi visto. Se já foi,
+     ignora (evita lançamento em dobro quando o WhatsApp reenvia).
+  2. Se o número não está cadastrado na fazenda, recusa. No primeiro
+     contato, pede o consentimento (LGPD).
+  3. Se é áudio, transcreve. Se a confiança for baixa, pede para repetir.
+  4. O roteador classifica como "manejo".
+  5. O modelo extrai uma lista: tanque "da entrada", 8 kg; tanque "do
+     meio", 3 mortos. "Meio saco" vira kg pelo peso do saco da fazenda.
+  6. Os apelidos viram IDs (T1, T2). Apelido desconhecido: o sistema
+     oferece cadastrar. Dois candidatos: pergunta qual.
+  7. A validação compara a ração com a biomassa do lote (somando o que já
+     foi lançado no dia) e a mortalidade com o tamanho do lote.
+       - bloqueio: nada é gravado, e o produtor recebe o motivo;
+       - alerta: pode confirmar, mas precisa justificar;
+       - ok: segue.
+  8. Cria uma pendência e responde com o resumo e os botões.
+  9. Só no Confirmar, e só do mesmo número, o lançamento vira definitivo.
+     Sem resposta em 24 h, expira.
+
+
+O QUE ACONTECE COM UMA PERGUNTA TÉCNICA
+---------------------------------------
+
+  1. O modelo escolhe o bloco do acervo pela descrição do bloco.
+  2. Com temperatura 0, responde em JSON: a resposta e o trecho LITERAL do
+     manual que a sustenta.
+  3. O código procura esse trecho no bloco (ignorando espaços e
+     maiúsculas). Se não achar, ou se o modelo disser que não encontrou,
+     a resposta é trocada por: "Não encontrei essa informação nos manuais
+     técnicos de segurança cadastrados."
+  4. Se achar, o código monta: resposta + fonte e página + aviso legal.
+  5. A consulta é gravada com a versão do acervo usada (RNF10).
+
+
+INGESTÃO DE LIVROS (PR #2)
+--------------------------
+
+  ipeia ingerir livro.pdf
+    -> extrai texto e sumário (marcadores do PDF)
+    -> remove cabeçalhos, rodapés, números de página soltos, hifenização
+    -> mede os tokens de cada capítulo e sugere o tema
+    -> imprime um esboço de bloco.toml por tema
+
+Você revisa, preenche fonte e licença, e cada bloco passa a apontar para
+intervalos de páginas do livro ("31-58, 70-72"). A citação mostra o número
+impresso na página, não o índice do arquivo. Os livros ficam fora do
+repositório (protegidos por direito autoral; .gitignore).
+
+
+SEGURANÇA E LGPD NO CÓDIGO
+--------------------------
+
+  - Assinatura do webhook conferida com o segredo do app da Meta.
+  - Isolamento por fazenda no próprio banco (row-level security): mesmo
+    que o código erre um filtro, o PostgreSQL não devolve dados de outra
+    fazenda. Testado contra um PostgreSQL real no CI.
+  - Só números cadastrados podem lançar ou confirmar.
+  - Consentimento registrado no primeiro contato.
