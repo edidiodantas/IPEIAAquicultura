@@ -1,0 +1,10 @@
+descricao = "Sanidade do camarão marinho (vannamei) em viveiros: mancha branca, mionecrose (músculo branco, cauda branca), necrose do hepatopâncreas, vibriose, mortalidade de camarão, biossegurança, pós-larvas"
+versao = "2026.11-rascunho"
+
+[[manuais]]
+arquivo = "fichas-sanidade-camarao.md"
+titulo = "Fichas técnicas IPEIA: sanidade do camarão"
+fonte = "Fichas técnicas IPEIA (rascunho para revisão)"
+versao = "0.1"
+homologado_em = ""
+licenca = "obra própria (IPEIA)"

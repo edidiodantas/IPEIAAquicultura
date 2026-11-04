@@ -1,0 +1,10 @@
+descricao = "Qualidade da água no cultivo de tilápia em viveiros e tanques-rede: oxigênio dissolvido, temperatura, pH, alcalinidade, amônia, nitrito, transparência, calagem, aeração, peixe boquejando na superfície"
+versao = "2026.11-rascunho"
+
+[[manuais]]
+arquivo = "fichas-agua-tilapia.md"
+titulo = "Fichas técnicas IPEIA: qualidade da água no cultivo de tilápia"
+fonte = "Fichas técnicas IPEIA (rascunho para revisão)"
+versao = "0.1"
+homologado_em = ""
+licenca = "obra própria (IPEIA)"

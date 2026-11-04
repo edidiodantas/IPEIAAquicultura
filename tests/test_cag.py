@@ -41,3 +41,23 @@ def test_citacao_ignora_espacos_e_maiusculas(acervo):
     bloco = acervo.blocos["exemplo-sanidade"]
     assert bloco.localizar("LOTES novos devem passar   por quarentena em tanque separado").pagina == "2"
     assert bloco.localizar("curto") is None
+
+
+def test_rascunhos_de_fichas_carregam_e_respondem():
+    """Os rascunhos não entram no acervo padrão, mas têm de funcionar quando publicados."""
+    from ipeia.config import RAIZ_PROJETO
+    from ipeia.cag.acervo import carregar_acervo
+
+    padrao = carregar_acervo(RAIZ_PROJETO / "acervo")
+    assert not any(n.startswith(("camarao-", "tilapia-")) for n in padrao.blocos)
+
+    rascunhos = carregar_acervo(RAIZ_PROJETO / "acervo" / "_rascunhos")
+    assert set(rascunhos.blocos) == {"camarao-sanidade", "camarao-qualidade-agua",
+                                     "tilapia-sanidade", "tilapia-qualidade-agua"}
+    assert rascunhos.verificar_tamanho(32768) == []
+    assert any("sem data de homologação" in p for p in rascunhos.pendencias())
+
+    r = responder(ModeloMock(), rascunhos, "O camarão está com o músculo da cauda branco, o que é?")
+    assert r.verificada and r.bloco == "camarao-sanidade"
+    r = responder(ModeloMock(), rascunhos, "A tilápia está com olho saltado e nadando em círculos")
+    assert r.verificada and r.bloco == "tilapia-sanidade"
